@@ -2,7 +2,7 @@
 
 모방학습 모델 A/B를 선택해 재료 한 세트(3개)를 목적지 지그로 운송하는 로봇 PC용 관제 연결 코드입니다. 관제가 Goal을 보내면 로봇 PC가 수행하고, 영상 완료 판정과 저장된 시작 자세 복귀를 확인한 뒤 최종 Result를 반환합니다.
 
-이 저장소에는 **액션 서버, 관제 클라이언트, ROS 인터페이스, 모의 테스트**가 있습니다. 학습 데이터·모델 가중치·카메라 영상·운영 로그·로봇별 보정값·기존 모방학습 런타임은 포함하지 않습니다. 단독 체크아웃으로 모의 통신 시험이 가능하며, 실물 실행은 기존 `so101_imitation` 작업 폴더에 이 코드를 배치해야 합니다.
+이 저장소에는 **액션 서버, 관제 클라이언트, ROS 인터페이스, 모의 테스트**가 있습니다. Git 소스에는 학습 데이터·모델 가중치·카메라 영상·운영 로그·로봇별 보정값·기존 모방학습 런타임을 포함하지 않습니다. 운영 A/B 모델 가중치는 아래 Release 첨부파일로 제공합니다. 단독 체크아웃으로 모의 통신 시험이 가능하며, 실물 실행은 기존 `so101_imitation` 작업 폴더에 이 코드를 배치해야 합니다.
 
 ## 통신 규격
 
@@ -138,3 +138,21 @@ bash arm1-control.sh send RESTART --hardware
 관제 PC에서는 `arm1_node.py`의 `Arm1ActionClient`를 사용하거나 동일 Action 규격으로 연결할 수 있습니다. `send_goal()`이 반환한 Future의 **최종 Result**를 기다린 뒤 다음 공정으로 넘어가세요. `success=true`를 받았는데도 같은 Goal을 재전송하면 서버는 새 요청으로 처리합니다.
 
 운영 로그는 `integration/arm1/logs/`에 생성되며 Git에 포함되지 않습니다. 모델·완료 기준·코드 변경은 서버 재시작 후 적용됩니다.
+
+## 모델 다운로드
+
+[운영 모델 A 15만 / B 25만 스텝 Release](https://github.com/7s-FA/so_101arm_imitation/releases/tag/models-20261011)에서 다음 파일을 받으세요.
+
+- `model_A_150000.tar.gz`
+- `model_B_250000.tar.gz`
+- `SHA256SUMS.txt`
+
+각 압축에는 가중치·모델 설정·전처리/후처리 정규화 파일이 들어 있습니다. A의 학습 ROI도 포함합니다. 학습 데이터·시작 자세·보정값·완료 판정 참조와 기존 모방학습 런타임은 별도입니다. 기존 로봇 환경에서 압축을 풀어 사용하세요. 압축 내부는 `model-map.json`과 같은 `projects/.../pretrained_model` 경로이며 동일 경로가 있으면 덮어씁니다. `git clone`만으로 모델 첨부파일이 다운로드되지는 않습니다.
+
+```bash
+gh release download models-20261011 --repo 7s-FA/so_101arm_imitation --dir model-downloads
+cd model-downloads
+sha256sum -c SHA256SUMS.txt
+tar -xzf model_A_150000.tar.gz -C ~/Downloads/so101_imitation
+tar -xzf model_B_250000.tar.gz -C ~/Downloads/so101_imitation
+```
