@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+*.lock
+integration/arm1/logs/
+integration/arm1/ros_ws/build/
+integration/arm1/ros_ws/install/
+integration/arm1/ros_ws/log/
+arm3-current/
+projects/
+runtime/
+*.zip
+*.tar.gz

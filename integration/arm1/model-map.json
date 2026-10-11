@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "action_name": "/arm1/data",
+  "hardware_domain_id": 40,
+  "mock_domain_id": 141,
+  "job_timeout_seconds": 600,
+  "models": {
+    "SELECT_A": {
+      "project": "model_A",
+      "model": "projects/model_A/models/model_A_newmask_300k/checkpoints/150000/pretrained_model",
+      "completion": "projects/model_A/completion/product_a.json"
+    },
+    "SELECT_B": {
+      "project": "model_B2",
+      "model": "projects/model_B2/models/model_B2_300k_20261010/checkpoints/250000/pretrained_model",
+      "completion": "projects/model_B2/completion/product_b.json"
+    }
+  }
+}
