@@ -1,12 +1,13 @@
 """Single owner of robot hardware; ROS threads only reserve/control jobs."""
 from dataclasses import dataclass, field
+from pathlib import Path
 import json
 import threading
 import time
 import uuid
 
-JOBS = {'SELECT_A', 'SELECT_B'}
-CONTROLS = {'EMER_STOP', 'RESTART'}
+JOBS = {'SELECT_A', 'SELECT_B', 'HOME_A', 'HOME_B'}
+CONTROLS = {'EMER_STOP', 'RESTART', 'CLEAR_ERROR'}
 
 
 class MotionBlocked(Exception):
@@ -39,7 +40,11 @@ class Controller:
         self.job = self.control = None
         self.active_seconds = 0
         self.stop_since = None
+        self.cleanup_marker = Path(log_path).parent / (type(backend).__name__+'-cleanup-required.json')
         self.cleanup_errors = []
+        if self.cleanup_marker.exists():
+            self.cleanup_errors = ['previous hardware cleanup requires fresh verification']
+            self.state = 'ERROR'
         self.log = open(log_path, 'a', buffering=1)
         self.backend.permit = self.permitted
         self.thread = threading.Thread(target=self._run, name='arm1-hardware', daemon=True)
@@ -53,13 +58,15 @@ class Controller:
 
     def reserve(self, command):
         with self.lock:
-            if self.closing.is_set() or self.state == 'ERROR': return None
+            if self.closing.is_set() or (self.state == 'ERROR' and command != 'CLEAR_ERROR'): return None
             if command in JOBS:
                 if self.job or self.control or self.state != 'IDLE' or self.pause.is_set(): return None
                 ticket = self.job = Ticket(command)
             elif command in CONTROLS:
                 if self.control: return None
                 if command == 'RESTART' and self.state != 'PAUSED': return None
+                if command == 'CLEAR_ERROR' and (self.state not in ('IDLE','PAUSED','ERROR')
+                        or self.state == 'IDLE' and self.job is not None): return None
                 ticket = self.control = Ticket(command)
                 # Latch at goal reception, before waiting for execute_callback.
                 if command == 'EMER_STOP': self.pause.set()
@@ -81,7 +88,8 @@ class Controller:
     def status(self):
         with self.lock:
             return {'state': self.state, 'phase': self.phase,
-                    'command': self.job.command if self.job else None}
+                    'command': self.job.command if self.job else None,
+                    'supports_error_reset': True, 'supports_home': True}
 
     def _state(self, state):
         with self.lock:
@@ -98,6 +106,41 @@ class Controller:
         if ticket is self.control: self.control = None
 
     def _cycle(self, elapsed):
+        with self.lock:
+            control = self.control
+            if control and control.activated and control.command == 'CLEAR_ERROR':
+                # Never call resume/begin/step: a discarded job cannot continue.
+                if self.cleanup_errors or self.state == 'ERROR':
+                    # Reconnect/read only. No goal, torque enable, or blind reset.
+                    recover = getattr(self.backend, 'recover_cleanup', None)
+                    if self.cleanup_errors and recover is None:
+                        self._finish(control, False, 'hardware cleanup unconfirmed; inspect locally')
+                        return
+                    if recover is not None:
+                        try:
+                            recover()
+                        except Exception as exc:
+                            self.event('recovery_failed', detail=repr(exc))
+                            self._finish(control, False, 'hardware recovery verification failed: '+str(exc))
+                            return
+                    else:
+                        self.backend.close()
+                    self.cleanup_marker.unlink(missing_ok=True)
+                    self.cleanup_errors.clear()
+                    self.event('cleanup_verified', detail='fresh motor checks passed; no movement requested')
+                else:
+                    self.backend.monitor()
+                    if not self.backend.hold_ready():
+                        self._finish(control, False, 'stopped pose not confirmed')
+                        return
+                self._finish(self.job, False, 'discarded by CLEAR_ERROR; no resume or home motion')
+                self.phase = None
+                self.active_seconds = 0
+                self.stop_since = None
+                self.pause.clear()
+                self._state('IDLE')
+                self._finish(control, True, 'error cleared; no movement requested')
+                return
         if self.pause.is_set() and self.state not in ('STOPPING','PAUSED'):
             self.backend.freeze()
             self.stop_since = time.monotonic()
@@ -150,7 +193,8 @@ class Controller:
                     self.backend.freeze()
                     self.phase = None
                     self._state('IDLE')
-                    self._finish(job, True, 'three parts complete and saved start pose reached; holding torque')
+                    self._finish(job, True, 'saved start pose reached; holding torque' if job.command.startswith('HOME_')
+                                 else 'three parts complete and saved start pose reached; holding torque')
                 self.event('phase', **self.status())
 
     def _run(self):
@@ -159,7 +203,8 @@ class Controller:
             while not self.closing.is_set():
                 tick = time.monotonic()
                 try:
-                    if self.state != 'ERROR': self._cycle(tick-previous)
+                    if self.state != 'ERROR' or (self.control and self.control.command == 'CLEAR_ERROR'):
+                        self._cycle(tick-previous)
                 except MotionBlocked:
                     pass  # Drop stale inference/goals; next iteration freezes once.
                 except JobRejected as exc:
@@ -174,6 +219,7 @@ class Controller:
                     except Exception as cleanup:
                         self.cleanup_errors.append(repr(cleanup))
                         self.event('cleanup_error', detail=repr(cleanup))
+                    self.cleanup_marker.write_text(json.dumps({'reason':repr(exc)},ensure_ascii=False))
                     with self.lock:
                         self._finish(self.job, False, repr(exc))
                         self._finish(self.control, False, repr(exc))
@@ -206,6 +252,7 @@ class MockBackend:
         self.history = []
     def begin(self, command):
         self.history.append(('begin',command));self.phase=None;self.count=0
+        if command.startswith('HOME_'):return 'RETURNING'
     def monitor(self): pass
     def freeze(self): self.history.append(('freeze',self.phase))
     def hold_ready(self): return True

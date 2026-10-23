@@ -1,0 +1,17 @@
+# Goal / Request: 로봇 움직임 명령
+# /arm2/data: build_a, build_b, slide_build
+# /arm3/data: load_a, load_b, slide_load
+# 공통 제어: EMER_STOP, RESTART, RESET
+string command
+---
+# Result: Request 명령 성공 여부 (0=false / 1=true)
+# 실행·정지·재개·초기화의 실제 확인 후 반환
+bool success
+# IDLE: 정상 수행 / ERROR: 오류 또는 작업 미완료
+string message
+---
+# Feedback: 현재 관제 상태 (상태가 바뀔 때만 전송)
+# IDLE: 정상 대기·완료 / RUNNING: 작업 처리 중
+# PAUSED: 비상정지 중 / ERROR: 오류
+# 개별 스텝·지그·리니어 시간·토크 세부 정보는 Pi 터미널·로그에 표시
+string message

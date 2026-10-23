@@ -6,7 +6,7 @@ import time
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('command',nargs='?',choices=['SELECT_A','SELECT_B','EMER_STOP','RESTART'])
+    p.add_argument('command',nargs='?',choices=['SELECT_A','SELECT_B','HOME_A','HOME_B','EMER_STOP','RESTART','CLEAR_ERROR'])
     p.add_argument('--check-connection',action='store_true')
     p.add_argument('--hardware',action='store_true')
     p.add_argument('--domain-id',type=int)

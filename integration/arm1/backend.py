@@ -72,21 +72,38 @@ class HardwareBackend:
     def _allow(self):
         if not self.permit(): raise MotionBlocked()
 
-    def _deadline(self,tick):
-        if time.monotonic()-tick > self.p.MAX_INFERENCE_SECONDS:
-            raise RuntimeError('Arm1 observation/control deadline exceeded (250ms)')
+    def _deadline(self,tick,*,context='control'):
+        elapsed=time.monotonic()-tick
+        limit=self.p.MAX_INFERENCE_SECONDS
+        if elapsed > limit:
+            # Keep the watchdog unchanged; distinguish idle serial reads from
+            # inference/camera/control work without logging every 30 Hz cycle.
+            detail={'context':context,'phase':getattr(self,'phase',None),'elapsed_ms':round(elapsed*1000,2),
+                    'limit_ms':round(limit*1000,2),
+                    'last_sample':getattr(self,'sample_timing',None)}
+            raise RuntimeError(f'Arm1 observation/control deadline exceeded ({limit*1000:g}ms): '
+                               +json.dumps(detail,ensure_ascii=False))
 
     def _sample(self):
-        values=self.p.control.feedback(self.bus,self.cal,self.guard)
+        tick=time.monotonic();feedback_timing={}
+        values=self.p.control.feedback(self.bus,self.cal,self.guard,timing=feedback_timing)
+        feedback_end=time.monotonic();torque_timing={}
         self.current={j:v['raw'] for j,v in values.items()}
         if self.armed:
             for j in self.p.control.JOINTS:
+                before=time.monotonic()
                 if self.bus.read(j,'Torque_Enable') != 1: raise RuntimeError(f'{j}: torque lost')
+                torque_timing[j]=round((time.monotonic()-before)*1000,2)
+        self.sample_timing={'feedback_ms':round((feedback_end-tick)*1000,2),
+                            'torque_ms':round((time.monotonic()-feedback_end)*1000,2),
+                            'feedback_joints_ms':{j:round((end-start)*1000,2)
+                                                 for j,(start,end) in feedback_timing.items()},
+                            'torque_joints_ms':torque_timing}
         return self.current
 
     def monitor(self):
         if self.bus is not None and self.armed:
-            tick=time.monotonic();self._sample();self._deadline(tick)
+            tick=time.monotonic();self._sample();self._deadline(tick,context='monitor')
 
     def _write(self,goals,tick,*,holding=False,speed=None):
         self._deadline(tick)
@@ -113,7 +130,9 @@ class HardwareBackend:
         return time.monotonic()-self.hold_since >= .2
 
     def begin(self,command):
-        _,_,self.pose,self.predictor,self.detector=self.models[command]
+        home_only=command in ('HOME_A','HOME_B')
+        model_command='SELECT_'+command[-1] if home_only else command
+        _,_,self.pose,self.predictor,self.detector=self.models[model_command]
         self.phase=None;self.candidate_pose=None;self.arrival_since=None;self.home_started=None
         self.predictor.reset();self.detector.reset()
         if self.bus is None:
@@ -132,7 +151,9 @@ class HardwareBackend:
         self.planner=self.p.control.TeachingTargets(self.cal,raw,self.p.control.load_motion())
         self.planner.syncing=False
         self.contact=self.Contact(self.cal['gripper'],self.planner.motion['gripper_relative_target_points'])
-        return 'PRECHECK'
+        # Reuse the measured, bounded slow return. No task completion or policy
+        # inference is executed for an explicit startup-home request.
+        return 'RETURNING' if home_only else 'PRECHECK'
 
     def resume(self):
         if hasattr(self,'predictor'):
@@ -231,6 +252,20 @@ class HardwareBackend:
                 return time.monotonic()-self.arrival_since >= .5
             self.arrival_since=None
         return False
+
+    def recover_cleanup(self):
+        """Verify restored hardware without disabling/enabling torque or moving."""
+        if self.bus is not None or self.cameras is not None or self.armed:
+            raise RuntimeError('Existing hardware session has not closed; inspect locally')
+        bus = self.p.control.SerialBus(self.p.control.PortConfig(self.cfg['robot']['port'],'5B3D046080','robot'))
+        try:
+            bus.open()
+            # verify checks every motor's identity, calibration and torque OFF.
+            self.p.control.verify(bus, self.cal)
+            self.p.control.feedback(bus, self.cal, self.guard)
+            self.p.control.verify(bus, self.cal)
+        finally:
+            bus.close()
 
     def close(self):
         errors=[]

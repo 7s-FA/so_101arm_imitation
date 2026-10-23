@@ -66,6 +66,14 @@ class RoundTrip(unittest.TestCase):
         self.good(self.goal('RESTART'))
     def test_04_b_completes_and_returns(self):
         self.good(self.goal('SELECT_B'))
+
+    def test_07_home_has_no_product_work_phase(self):
+        for command in ('HOME_A','HOME_B'):
+            self.history.clear()
+            self.good(self.goal(command))
+            phases={s['phase'] for s in self.history if s['command']==command and s['phase']}
+            self.assertEqual(phases,{'RETURNING'})
+            self.assertTrue(self.status['supports_home'])
     def test_05_team_client_reports_real_final_result(self):
         team=Arm1ActionClient()
         try:
@@ -76,6 +84,18 @@ class RoundTrip(unittest.TestCase):
             self.assertEqual(future.result().message,'IDLE');self.assertFalse(team.busy)
             self.assertIsNone(team.last_control_result)
         finally:team.destroy_node()
+
+    def test_06_clear_error_discards_paused_job_and_waits_for_new_order(self):
+        task=self.goal('SELECT_A');self.assertTrue(task.accepted);result=task.get_result_async()
+        self.spin_until(lambda:self.status['command']=='SELECT_A' and self.status['phase']=='WORKING')
+        self.assertFalse(self.goal('CLEAR_ERROR').accepted)
+        self.good(self.goal('EMER_STOP'))
+        self.good(self.goal('CLEAR_ERROR'))
+        response=self.wait(result)
+        self.assertEqual(response.status,6);self.assertFalse(response.result.success)
+        self.spin_until(lambda:self.status['state']=='IDLE' and self.status['command'] is None)
+        self.assertTrue(self.status['supports_error_reset'])
+        self.good(self.goal('SELECT_B'))
 
 
 if __name__=='__main__':unittest.main(verbosity=2)

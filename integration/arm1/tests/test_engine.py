@@ -38,6 +38,14 @@ class EngineTests(unittest.TestCase):
         self.assertTrue(self.finish(self.issue('SELECT_A')))
         self.assertTrue(self.finish(self.issue('SELECT_B')))
         self.assertEqual([x[1] for x in self.backend.history if x[0]=='begin'],['SELECT_A','SELECT_B'])
+    def test_home_only_returns_without_product_work(self):
+        for command in ('HOME_A','HOME_B'):
+            self.backend.history.clear()
+            task=self.issue(command)
+            self.assertIsNone(self.c.reserve('SELECT_A'))
+            self.assertTrue(self.finish(task))
+            self.assertEqual({p for action,p in self.backend.history if action=='step'},{'RETURNING'})
+            self.assertTrue(self.c.status()['supports_home'])
     def test_already_complete_returns_before_success_for_both_models(self):
         self.backend.begin=Mock(return_value='PRECHECK')
         self.backend.already_complete=True
@@ -115,6 +123,43 @@ class EngineTests(unittest.TestCase):
     def test_reserved_unactivated_goal_does_not_move(self):
         self.assertIsNotNone(self.c.reserve('SELECT_A'));time.sleep(.04)
         self.assertEqual(self.backend.history,[])
+
+    def test_clear_idle_has_no_motion_or_resume(self):
+        self.assertTrue(self.finish(self.issue('CLEAR_ERROR')))
+        self.assertEqual(self.backend.history,[])
+        self.assertTrue(self.c.status()['supports_error_reset'])
+
+    def test_clear_paused_discards_old_task_without_resume_or_home(self):
+        task=self.issue('SELECT_B');until(lambda:self.backend.phase=='WORKING')
+        self.assertTrue(self.finish(self.issue('EMER_STOP')))
+        mark=len(self.backend.history)
+        self.assertTrue(self.finish(self.issue('CLEAR_ERROR')))
+        self.assertFalse(self.finish(task));self.assertEqual(self.c.status()['state'],'IDLE')
+        self.assertIsNone(self.c.phase);self.assertFalse(self.c.pause.is_set())
+        time.sleep(.03);self.assertEqual(self.backend.history[mark:],[])
+        self.assertTrue(self.finish(self.issue('SELECT_A'))) # Only a new request moves.
+
+    def test_clear_fault_requires_confirmed_cleanup(self):
+        self.backend.step=Mock(side_effect=RuntimeError('motor fault'))
+        self.assertFalse(self.finish(self.issue('SELECT_A')))
+        self.backend.close=Mock();mark=len(self.backend.history)
+        self.assertTrue(self.finish(self.issue('CLEAR_ERROR')))
+        self.backend.close.assert_called_once()
+        self.assertEqual(self.c.status()['state'],'IDLE');self.assertEqual(self.backend.history[mark:],[])
+
+    def test_clear_rejects_unconfirmed_cleanup_or_hold(self):
+        self.c.cleanup_errors.append('torque-off unconfirmed')
+        self.assertFalse(self.finish(self.issue('CLEAR_ERROR')))
+        self.c.cleanup_errors.clear()
+        self.backend.hold_ready=Mock(return_value=False)
+        self.assertFalse(self.finish(self.issue('CLEAR_ERROR')))
+        self.assertEqual(self.backend.history,[])
+
+    def test_clear_cannot_interrupt_running_or_reserved_job(self):
+        task=self.c.reserve('SELECT_A');self.assertIsNone(self.c.reserve('CLEAR_ERROR'))
+        self.c.activate(task);until(lambda:self.c.state=='RUNNING')
+        self.assertIsNone(self.c.reserve('CLEAR_ERROR'))
+        self.assertTrue(self.finish(task))
 
 
 class AdapterTests(unittest.TestCase):

@@ -1,3 +1,34 @@
+# host_total · 통합 관제 변경사항 (2026-10-22)
+
+기준 브랜치: `origin/main` · 기준 커밋: `def6471792af92c81fb0e92ea2feabe0645fa17c`. 기존 브랜치 이력을 보존하여 변경을 추가합니다.
+
+## 추가·수정 내용
+
+- 호스트 개발 소스의 HOME_A/HOME_B 시작 자세 복귀, CLEAR_ERROR 실패 작업 정리, 정지·재개 처리와 테스트를 포함했습니다.
+- 250ms 제어 watchdog 제한은 유지하면서 관찰·feedback·토크 읽기와 관절별 소요시간을 진단하도록 보강했습니다.
+- 실물 팔1 PC의 최신 실행 사본은 deployments/warehouse/에 별도로 보존했습니다. 적재 확인 후 완료 응답과 팔 복귀 완료를 구분하는 delivery_reported/ready_for_new_job 상태, 오류 정리 시 연결 재확인을 포함합니다.
+- 현장 모델 선택 설정·클라이언트·서버 및 Arm1_PC_Package 인터페이스 사본을 포함합니다. 학습 가중치·영상·학습 데이터는 새로 업로드하지 않습니다.
+
+## 적용 위치와 확인
+
+호스트/Pi 디스크 소스 비교 결과입니다. 이번 게시에서 팔1 동작·원점 복귀·서비스 재시작은 수행하지 않았습니다. 모델과 카메라·모터 설정은 해당 장치에서 별도 확인해야 합니다.
+
+루트는 호스트 개발 소스, `deployments/warehouse/source/`는 현장 소스 차이입니다. 현재 실물 PC를 재현할 때는 아래 도구로 **기준 main + 현장 차이**를 새 폴더에 복원합니다.
+```bash
+python3 tools/export_field_source.py warehouse --output /tmp/warehouse-review
+```
+현장에 없는 upstream 파일 목록은 삭제 명령이 아닙니다. 외부 linear 사본은 workcell export의 `external-linear/`에 남기며 설치 경로를 확인해야 합니다.
+
+### 게시 전 검사 (2026-10-23)
+
+공개용 사본 팔1 모의 테스트 45개 통과. warehouse 소스 복원 도구 실행 확인. 실물 동작을 실행한 검사는 아닙니다.
+
+`192.0.2.*`와 `/home/example_robot/`, `/home/example_warehouse/`, `/home/example_operator/`는 문서용 가상 주소·계정·경로입니다. 실제 설치 정보는 포함하지 않으며 실행 전에 사용자 환경으로 설정해야 합니다.
+
+인증정보·운행 로그·빌드 산출물은 포함하지 않았습니다. 저장소에 원래 있던 모델/자산 이력은 유지합니다. [파일별 변경 목록](CHANGES_HOST_TOTAL.md)을 함께 확인하세요.
+
+---
+
 # SO-101 Robot arm 1 — ROS 2 Action 서버
 
 모방학습 모델 A/B를 선택해 재료 한 세트(3개)를 목적지 지그로 운송하는 로봇 PC용 관제 연결 코드입니다. 관제가 Goal을 보내면 로봇 PC가 수행하고, 영상 완료 판정과 저장된 시작 자세 복귀를 확인한 뒤 최종 Result를 반환합니다.
@@ -129,6 +160,9 @@ bash arm1-control.sh send SELECT_A --hardware
 bash arm1-control.sh send SELECT_B --hardware
 bash arm1-control.sh send EMER_STOP --hardware
 bash arm1-control.sh send RESTART --hardware
+# 제품 작업 없이 저장된 시작 자세로만 이동 (실제 팔 이동)
+bash arm1-control.sh send HOME_A --hardware
+bash arm1-control.sh send HOME_B --hardware
 ```
 
 서버 Ctrl+C는 토크를 해제하므로 팔을 받치고 종료합니다. 클라이언트만 종료하는 것은 로봇 정지가 아닙니다. 소프트웨어 정지는 하드웨어 비상정지 장치를 대체하지 않습니다. 복귀 경로는 자동 충돌 회피 경로가 아닙니다.
@@ -138,6 +172,14 @@ bash arm1-control.sh send RESTART --hardware
 관제 PC에서는 `arm1_node.py`의 `Arm1ActionClient`를 사용하거나 동일 Action 규격으로 연결할 수 있습니다. `send_goal()`이 반환한 Future의 **최종 Result**를 기다린 뒤 다음 공정으로 넘어가세요. `success=true`를 받았는데도 같은 Goal을 재전송하면 서버는 새 요청으로 처리합니다.
 
 운영 로그는 `integration/arm1/logs/`에 생성되며 Git에 포함되지 않습니다. 모델·완료 기준·코드 변경은 서버 재시작 후 적용됩니다.
+
+### 자재창고 오류 초기화
+
+관제 웹의 **자재창고 오류 초기화**는 `CLEAR_ERROR` 성공을 확인한 뒤 실패 주문을 정리합니다. 모든 장치 정지와 초기 배치·자재 상태를 확인한 후 사용하세요. 서버가 `/arm1/status`에 `supports_error_reset: true`를 보내야 버튼이 활성화됩니다.
+
+`CLEAR_ERROR`는 IDLE·PAUSED·ERROR에서 남은 작업을 폐기합니다. 원점 복귀, 토크 재활성화, 작업 재개는 하지 않으며, 실행 중에는 거절합니다. 토크 해제·하드웨어 정리가 실패했던 오류는 현장 점검이 필요해 초기화를 거절합니다. 새 주문은 별도로 요청해야 합니다.
+
+250ms 감시 제한은 대기 중 모터 상태 확인에도 적용됩니다. 초과 로그에는 `context`(monitor/control), `phase`, `elapsed_ms`와 마지막 피드백·토크 읽기의 전체 및 관절별 시간이 기록됩니다. `monitor` 오류를 AI 추론 지연으로 단정하지 마세요. 이 진단 추가는 기존 제한 시간이나 통신·토크 검사를 완화하지 않습니다.
 
 ## 모델 다운로드
 

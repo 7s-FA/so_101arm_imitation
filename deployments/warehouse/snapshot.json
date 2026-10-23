@@ -1,0 +1,74 @@
+{
+  "robot": "warehouse",
+  "captured": "2026-10-22",
+  "comparison_base": "def6471792af92c81fb0e92ea2feabe0645fa17c",
+  "base_prefix": "",
+  "changes": [
+    {
+      "path": "arm1-control.sh",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/Arm1_PC_Package/README.ko.md",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/Arm1_PC_Package/arm1_node.py",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/Arm1_PC_Package/client.py",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/Arm1_PC_Package/interface_check.py",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/Arm1_PC_Package/interfaces/Arm.action",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/README.ko.md",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/backend.py",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/client.py",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/engine.py",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/model-map.json",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/server.py",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/tests/test_adapter.py",
+      "kind": "different"
+    },
+    {
+      "path": "integration/arm1/tests/test_completion_response.py",
+      "kind": "extra"
+    },
+    {
+      "path": "integration/arm1/tests/test_engine.py",
+      "kind": "different"
+    }
+  ],
+  "runtime_overrides": [],
+  "absent_in_deployment": [
+    ".gitignore",
+    "README.md"
+  ],
+  "notes": "Text source differences only. Missing deployment files are inventory, not deletion requests. External linear files are stored separately."
+}

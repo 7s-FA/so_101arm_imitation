@@ -58,6 +58,17 @@ class AdapterFlow(unittest.TestCase):
             self.assertTrue(b.step('RETURNING'))
         b.predictor.predict.assert_not_called()
         self.assertEqual(b._write.call_args.kwargs['speed'],56)
+    def test_home_begin_uses_saved_model_pose_then_return_without_inference(self):
+        b=self.b;b.cal={'gripper':{}};b.Contact=Mock()
+        b.models={'SELECT_A':({},b.cal,{'raw':dict(b.current)},b.predictor,b.detector)}
+        b.p.control.load_motion=lambda:{'gripper_relative_target_points':1}
+        planner=b.planner;planner.motion={'gripper_relative_target_points':1}
+        b.p.control.TeachingTargets=lambda *args:planner
+        phase=b.begin('HOME_A')
+        self.assertEqual(phase,'RETURNING')
+        b.step(phase)
+        b.predictor.predict.assert_not_called();b.detector.observe.assert_not_called()
+        self.assertEqual(b._write.call_args.kwargs['speed'],56)
     def test_return_speed_failure_is_not_success_and_resume_rechecks(self):
         b=self.b
         b.bus.read.side_effect=lambda j,r:0
@@ -95,6 +106,35 @@ class AdapterFlow(unittest.TestCase):
         b=self.b;bus=b.bus;camera=b.cameras
         b.close();b.close()
         b.p.release.assert_called_once_with(bus);bus.close.assert_called_once();camera.close.assert_called_once()
+
+    def test_idle_monitor_reports_read_breakdown_without_relaxing_deadline(self):
+        b=self.b;b.phase=None;b.guard=object()
+        clock=[100.0]
+        def feedback(bus,cal,guard,*,timing):
+            for joint in b.p.control.JOINTS:
+                before=clock[0];clock[0]+=.1
+                timing[joint]=(before,clock[0])
+            return {joint:{'raw':2000} for joint in b.p.control.JOINTS}
+        def read(joint,register):
+            self.assertEqual(register,'Torque_Enable');clock[0]+=.03;return 1
+        b.p.control.feedback=feedback;b.bus.read.side_effect=read
+        b._sample=HardwareBackend._sample.__get__(b)
+        with patch('backend.time.monotonic',side_effect=lambda:clock[0]):
+            with self.assertRaisesRegex(RuntimeError,'250ms') as error:b.monitor()
+        import json
+        detail=json.loads(str(error.exception).split(': ',1)[1])
+        self.assertEqual(detail['context'],'monitor')
+        self.assertEqual(detail['elapsed_ms'],260)
+        self.assertEqual(detail['last_sample']['feedback_ms'],200)
+        self.assertEqual(detail['last_sample']['torque_ms'],60)
+        self.assertEqual(detail['last_sample']['torque_joints_ms'],{'a':30,'gripper':30})
+        b.bus.write.assert_not_called();b.bus.write_position_profile.assert_not_called()
+
+    def test_monitor_below_limit_and_unopened_bus_do_not_fault(self):
+        b=self.b
+        with patch('backend.time.monotonic',side_effect=[100,100.249]):b.monitor()
+        b.bus=None;b._sample.reset_mock()
+        b.monitor();b._sample.assert_not_called()
 
 
 if __name__=='__main__':unittest.main()
