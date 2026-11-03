@@ -140,30 +140,35 @@ class Controller:
         with self.lock:
             control = self.control
             if control and control.activated and control.command == 'CLEAR_ERROR':
-                # Never call resume/begin/step: a discarded job cannot continue.
-                if self.cleanup_errors or self.state == 'ERROR':
-                    # Reconnect/read only. No goal, torque enable, or blind reset.
-                    recover = getattr(self.backend, 'recover_cleanup', None)
-                    if self.cleanup_errors and recover is None:
-                        self._finish(control, False, 'hardware cleanup unconfirmed; inspect locally')
-                        return
-                    if recover is not None:
-                        try:
-                            recover()
-                        except Exception as exc:
-                            self.event('recovery_failed', detail=repr(exc))
-                            self._finish(control, False, 'hardware recovery verification failed: '+str(exc))
+                # Explicit cleanup must also release sessions retained in IDLE/PAUSED.
+                # Only the hardware worker may close/reopen devices.
+                try:
+                    if self.state != 'ERROR' and not self.cleanup_errors:
+                        self.backend.monitor()
+                        if not self.backend.hold_ready():
+                            self._finish(control, False, 'stopped pose not confirmed')
                             return
-                    else:
-                        self.backend.close()
-                    self.cleanup_marker.unlink(missing_ok=True)
-                    self.cleanup_errors.clear()
-                    self.event('cleanup_verified', detail='fresh motor checks passed; no movement requested')
-                else:
-                    self.backend.monitor()
-                    if not self.backend.hold_ready():
-                        self._finish(control, False, 'stopped pose not confirmed')
-                        return
+                    reset_resources=getattr(self.backend, 'reset_resources', None)
+                    if reset_resources is not None:
+                        reset_resources()
+                    elif self.cleanup_errors or self.state == 'ERROR':
+                        recover=getattr(self.backend, 'recover_cleanup', None)
+                        if recover is None and self.cleanup_errors:
+                            raise RuntimeError('hardware cleanup unconfirmed; inspect locally')
+                        if recover is not None:recover()
+                        else:self.backend.close()
+                except Exception as exc:
+                    self.cleanup_errors.append(repr(exc))
+                    self.cleanup_marker.write_text(json.dumps({'reason':repr(exc)},ensure_ascii=False))
+                    self._state('ERROR')
+                    self.event('recovery_failed', detail=repr(exc))
+                    self._finish(control, False, 'hardware recovery verification failed: '+str(exc))
+                    return
+                self.cleanup_marker.unlink(missing_ok=True)
+                self.cleanup_errors.clear()
+                self.event('cleanup_verified', detail='owned resources released; fresh motor checks passed; no movement requested')
+                clear_state=getattr(self.backend, 'clear_recovery_state', None)
+                if clear_state is not None:clear_state()
                 self._finish(self.job, False, 'discarded by CLEAR_ERROR; no resume or home motion')
                 self.phase = None
                 self.placement_confirmed_at = None
@@ -195,7 +200,7 @@ class Controller:
                 if control and control.activated:
                     if control.command == 'EMER_STOP':
                         self._finish(control, True, 'stopped pose confirmed; torque retained')
-                    else:
+                    elif control.command == 'RESTART':
                         self.backend.resume()
                         self.pause.clear()
                         self._state('RUNNING' if self.phase else 'IDLE')
@@ -219,6 +224,12 @@ class Controller:
             raise RuntimeError('Job watchdog expired before completion and return')
         if self.phase == 'COMPLETION_WAIT':
             self.backend.monitor()
+            if self.placement_confirmed_at is None and getattr(self.backend, 'verify_after_return', False):
+                # Plan jobs: confirm the placement with the arm back home (camera view unobstructed).
+                verdict = self.backend.verify_placement()
+                if verdict is False: raise JobRejected(self.backend.verify_failure)
+                if verdict is True:
+                    with self.lock: self._placement_confirmed()
             with self.lock:
                 self._report_delivery(job)
             return
@@ -230,7 +241,7 @@ class Controller:
                     if self.backend.already_complete: self._placement_confirmed()
                 elif self.phase == 'HOMING': self.phase = 'WORKING'
                 elif self.phase == 'WORKING':
-                    self._placement_confirmed()
+                    if not getattr(self.backend, 'verify_after_return', False): self._placement_confirmed()
                     self.phase = 'RETURNING'
                 else:
                     self.backend.freeze()

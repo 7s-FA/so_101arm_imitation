@@ -1,0 +1,9 @@
+# CUDA torch/torchvision are selected separately for JetPack and constrained by installer.
+lerobot==0.6.1
+numpy==2.2.6
+opencv-python-headless>=4.9,<4.14
+Pillow>=10,<13
+pyserial==3.5
+feetech-servo-sdk==1.0.0
+# IK correction (mujoco, scipy) is installed from the bundled wheels/ folder (ARM64, offline) by tools/install_runtime.py.
+# RealSense installed separately: reuse working ARM build, wheel, or ARM64 PyPI wheel.

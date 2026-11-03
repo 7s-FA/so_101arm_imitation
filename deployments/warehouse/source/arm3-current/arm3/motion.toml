@@ -1,0 +1,9 @@
+# 기존 teaching_motion.toml의 direct 티칭 모드와 같은 목표 제어 설정.
+# 변경 후 실행기를 다시 시작하면 적용됩니다.
+[motion]
+# 초기/Y 동기화와 실시간 추종이 함께 사용합니다.
+# 현재 위치에서 허용하는 목표 차이이며 초당 속도가 아닙니다.
+body_relative_target_deg = 10.0
+gripper_relative_target_points = 7.0
+# 목표 제어 주기. 실제 주기는 모터 통신 시간에 따라 느려질 수 있습니다.
+control_hz = 30.0

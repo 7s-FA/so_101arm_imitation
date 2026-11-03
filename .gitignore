@@ -12,3 +12,6 @@ projects/
 runtime/
 *.zip
 *.tar.gz
+
+!deployments/warehouse/source/arm3-current/
+!deployments/warehouse/source/arm3-current/**

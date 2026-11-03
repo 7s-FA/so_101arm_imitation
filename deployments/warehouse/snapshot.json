@@ -1,74 +1,87 @@
 {
-  "robot": "warehouse",
-  "captured": "2026-10-22",
-  "comparison_base": "def6471792af92c81fb0e92ea2feabe0645fa17c",
-  "base_prefix": "",
-  "changes": [
-    {
-      "path": "arm1-control.sh",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/Arm1_PC_Package/README.ko.md",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/Arm1_PC_Package/arm1_node.py",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/Arm1_PC_Package/client.py",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/Arm1_PC_Package/interface_check.py",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/Arm1_PC_Package/interfaces/Arm.action",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/README.ko.md",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/backend.py",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/client.py",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/engine.py",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/model-map.json",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/server.py",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/tests/test_adapter.py",
-      "kind": "different"
-    },
-    {
-      "path": "integration/arm1/tests/test_completion_response.py",
-      "kind": "extra"
-    },
-    {
-      "path": "integration/arm1/tests/test_engine.py",
-      "kind": "different"
-    }
-  ],
-  "runtime_overrides": [],
-  "absent_in_deployment": [
-    ".gitignore",
-    "README.md"
-  ],
-  "notes": "Text source differences only. Missing deployment files are inventory, not deletion requests. External linear files are stored separately."
+  "captured": "2026-11-03",
+  "source": "device-local",
+  "device": "warehouse",
+  "source_root": "/home/jetson/Downloads/arm1/arm1_jetson_IK_20261027",
+  "excluded": "Runtime state, logs, backups, caches, training weights and recordings. Workcell private JSON settings and raw image fixtures stay on device. 3D geometry assets and facility inspection images excluded from public publication. Motion-plan and device operational JSON files excluded pending separate publication permission.",
+  "sha256": {
+    "CODEX_README.md": "a26688e7017641a7103b9679594a2e18000530ad7a3e46b49138af54c836d39f",
+    "README.md": "e8e43d41ad14a78dbcd7d2e0787e8dc357721fa9e69fc08cc0ea3c0ba973a208",
+    "arm3-current/arm3/camera_preview.py": "0045c8f49d4cd90ae61ee29ece474dd1434f8f2053f0a982b6784c2c2ac6e2f8",
+    "arm3-current/arm3/capture_queue.py": "61de6dd05249d5b66c95e3625dfa416976979be7bb98f7b7098bd12f30f293e4",
+    "arm3-current/arm3/check_devices.py": "42fd2810be87eab74b17523378e4209a87bc289c9f7ae1a1ea12f1055a1bbf04",
+    "arm3-current/arm3/diagnostic_bus.py": "e9a78146a869a05729e3841b663d33a0a9c71f2bac1e6812e3b833ad601691aa",
+    "arm3-current/arm3/gripper_contact.py": "fef26cac065035ffb89f2f5a50e79d386b4b798bc134d57bf9db9e82e5a343ec",
+    "arm3-current/arm3/gui_text.py": "ed17c773dabf2610822fad449fdb07c490aa076f4e59ba7bfce781190aeef0ee",
+    "arm3-current/arm3/motion.toml": "545718e3c506600576ce7ea0ce3cc7e30a8e7d097494cdf8692af6e41b1bd89c",
+    "arm3-current/arm3/part_presence.py": "0d0ec8967d6b9a026e2836085e400f49b57fc7d541db45d19c5389a623f3fc48",
+    "arm3-current/arm3/project_paths.py": "05d7d3b7c80cc674e920e28b14d5dfd35df05e583b857b214e429f1c6d1c2ed8",
+    "arm3-current/arm3/projects.py": "b9e80d680ff8fc628fb7a95c9b093c7eb9ca1c20aabe996be012edef33a62ba5",
+    "arm3-current/arm3/record_purple.py": "11eb3a7c1a0de1fae5922e880783832681f00a3786c8b657244f03e517481191",
+    "arm3-current/arm3/record_timing.py": "89ca39505bd8f598ef5c4f501df2f2d95acd5a32c9112b909a33f8ff4ab31afb",
+    "arm3-current/arm3/record_view.py": "1028debd6061eba6a1200f48c66924633ac933b562a04d0f72bc13f7e0247417",
+    "arm3-current/arm3/roi_editor.py": "5b7451a5ba71e89af675dacfb5633954b5fb15cd590aa17156d91057ff02def1",
+    "arm3-current/arm3/roi_mask.py": "56684409302ea8be5094081c60f9aa61c486b469eeb1df04dcc28261e8896559",
+    "arm3-current/arm3/roi_train_entry.py": "76fab06bf1f4acd315145fa5f6ad6c5bbaa697543015c456ccbbeb5966b1083b",
+    "arm3-current/arm3/run_policy.py": "42f7ce7df3cde3edf5a2a56932fca208d2fe1db89bc32e276f018c2833a08c73",
+    "arm3-current/arm3/start_pose.py": "e96733b89826c5a43a8bdc05947b6b30497379e507668e4a39112792c0142642",
+    "arm3-current/arm3/task_completion.py": "3fd7538727c736d8a3f086d46207c19b3c73c1437d8024b14225ba287818641f",
+    "arm3-current/arm3/teleoperate_slow.py": "fd789fc59a5667138dbe2347f8c7f4b350c5519e8d3ef5b54a22fd8ff9323a22",
+    "arm3-current/raspberry_pi_player/player/__init__.py": "ca86cfc9cf6bba89bb1023876e3befdf160245a0ba4ab30b30ca2c4ab1c4fd18",
+    "arm3-current/raspberry_pi_player/player/hardware.py": "5d91a481b14b142be3ef0e498306a76737e855265b46fa10fd4dbcf39dcd0f3e",
+    "arm3-current/raspberry_pi_player/player/program.py": "7bf7c9a0142e8038593da1d6bf0d3c78e5d9232c568698088d02090d5708c991",
+    "arm3-current/raspberry_pi_player/temperature_guard.py": "0965dfc1caa932622642a59a84b49dee7d925bcfb693db1f0d6389bf53aab3a6",
+    "ik/isaac_migration/real/real_lid_plan.py": "ff86e726d710ce77373cc35391b02675246220554c53825b0d80e8819fee323d",
+    "ik/isaac_migration/real/real_plan_burger.py": "8ef34f4b8c488935828bc7ed753a2708f4fb5590759f1abc0dc92f5426087865",
+    "ik/isaac_migration/scripts/policy_contract.py": "b64e57183a0dc42d9cf5e234162dc8ea895de2ea76db06526bce8ec003f5a52e",
+    "ik/isaac_migration/scripts/retarget_prefix.py": "7121521452e942292a9d0059db3228ea59a6b0e274329931dc4eef48a2c8c2ed",
+    "ik/isaac_migration/scripts/third_stage_path.py": "ab707c6c9cbf02f548084f8c2eaaa17afe455a7ee304abdba1fb2a7a90f21fc0",
+    "ik/isaac_migration/sets/place_commands.py": "f5045052eff309f9fb215fe54c22310ed1f0273c30ff8c0e36b751d0a62527ec",
+    "ik/isaac_migration/sets/plan_events.py": "06fa071eaed6d9452a93ec235d77746d2efa88532e290ee478d1a801d964d2fb",
+    "ik/isaac_migration/sets/scene_from_plan.py": "4b0d6c5834295797c2ccaf5cafd18d6f31908fd2ef76784a0a63e9e97f064016",
+    "install-jetson.sh": "40449d14fe1e8a1d61a3ca231ce1df164606bd9cd90bacdfb2cb8dcba2c4e0fc",
+    "integration/arm1/arm1_node.py": "7f26efe9d3cc2d1021d17b5a1f302dac908982c458d5ae08afb22812639639e9",
+    "integration/arm1/backend.py": "dc6ae075bfe7c9b666b2d6eb7acc311d769d3d651616664638cb2c90ee8f86a1",
+    "integration/arm1/check_models.py": "adfa5dd12d51e9ba21d3884fb7a80c1dd252a33917b00dea674129bcb87e08ba",
+    "integration/arm1/client.py": "0a6d8ff951b898d7ea719442f33ea93cd0c82bad731ca1b8dde92336f7b92e1c",
+    "integration/arm1/engine.py": "989e5b7dce996713209efe2ad8f439d9945a302a2f038f2a9e7c81da74e715d8",
+    "integration/arm1/gc_watch.py": "799a1d92fb563eeb8dabea6c0493c64a0c936ef350e4249cad2085919716078d",
+    "integration/arm1/interface_check.py": "ab5bd2a6e1093c9b4535e0c0b32cdd7339d567def09ba621ef0a4caef1a163f5",
+    "integration/arm1/interfaces/Arm.action": "4ec99ff0b0761e2822be9ebbf35cb90754f2e89066fe35beac49959ad382d19f",
+    "integration/arm1/jig_cells.py": "9d8c75fbb147d06a6c13fb1f76b9a524a596c48d4e0df6001ba6b90557e42955",
+    "integration/arm1/jig_live.py": "8fa6b2f5de5e5fdb82427b9de204e1c2aa028f72443a374a9f482accfa7fe9a3",
+    "integration/arm1/jig_offset.py": "c2416acb018d4b717e6eab114e823f9c8a726d522d78453cc9fbb327791dedcc",
+    "integration/arm1/make_jig_reference.py": "b5887bfbf15cc6b1296ee3898bbdecb03f3f5455c6570e3888351e182a5bf245",
+    "integration/arm1/plan_runner.py": "34b7bc730810165b9a53cc8991b866d7ed7fcdb3066683ac0f19a3cd0969fb18",
+    "integration/arm1/resource_cleanup.py": "0cf5c854fdd16a64869ae49a34790a1bcbb5941744df26c047124aac4e1c56bc",
+    "integration/arm1/ros-env.sh": "2fa4d4c2bf888c665da3379506465a8286938065b3f928963a506374de622495",
+    "integration/arm1/server.py": "a6277110db12c51e66fa879b8de62c406e4fe77664d56480eff65b640901e639",
+    "integration/arm1/setup.sh": "9b2bb40a0a182672c4074c74bbb64675000283e6156ae9787361ab8a6a617933",
+    "integration/arm1/tests/ros_roundtrip.py": "14670aad25bfe485f606c5d3bfa89012272c7e005b7a6b0dd1966215428ccc8a",
+    "integration/arm1/tests/run_ros_suite.py": "4251ff11687634845c98a408e107afb2636762b551871d517933c1ba8604a27b",
+    "integration/arm1/tests/test_adapter.py": "5fdc361022c52f88ab83ddc3ad7a595f4ee38cae0da8ea69c7d9669010119f2c",
+    "integration/arm1/tests/test_completion_response.py": "e0cdc77bc115593ab56c0e9ae30070417b37e9ff9f7a17eabf53752977ba8d84",
+    "integration/arm1/tests/test_engine.py": "a7ae0a8053e138b3134bd31d180bffad64242975bac00b5d584b21eb259e5582",
+    "integration/arm1/tests/test_gc_watch.py": "aceb7d64ca5d4cc969d0063243283044dfd03d73443d160049e6517b2f1970d5",
+    "integration/arm1/tests/test_plan.py": "025dd2e72f3892b9aed488320c98bfe9c7646ba6c61d6d97e6f407f1ca22650e",
+    "integration/arm1/tests/test_precheck_overlap.py": "a430dec194bd7997fdb6bbc7065c5aaa0b525dc9c50e42fc3a2e3f87e0df3d6c",
+    "integration/arm1/tests/test_retarget_memory.py": "c996f6652801f13a80579a357e81de5e3175f8182679cfdaaf49963cabed7925",
+    "integration/arm1/tests/test_vision.py": "1dd644106b1a1def196ccfbb29089d409017d7a76d8c04ef22152cfe1c7ee822",
+    "integration/arm1/vision_judge.py": "f60ecd7d2235eee9f7805dba37d2a43022026532cab332cb93bcd7320ed4ed4c",
+    "jetson-run.sh": "d0f9972757550e0bb5726b1f1c9e3930d3591e922fc16f66e0a656aac909fc49",
+    "requirements-runtime.txt": "7e6cb7952fdc129ab204689621b29445c65ca8f8a3fcd378b5546b6b060dcd36",
+    "run-arm1-server.sh": "9686e0efbe0cc1d4377d3192be8340b28d62722ea9a2502f5981db138de88062",
+    "run-modelA.sh": "8be2cff41e4b63f0877d757110e531616a9bd0eb7d3c4643370da456fc41458d",
+    "run-modelB.sh": "85620b95a3fe61046086cbbbd9342f7d06315ab2fd2a61bac2edf7810b63f9aa",
+    "tools/benchmark.py": "5134b1ca9e1b5de69f24d332a4b3812bb12af08fe2c514ba0f169ab773670779",
+    "tools/bus_timing_test.py": "86623caaf44dcdade1976e928ac7468d7966b2c6827b4ced71063a3e305a2960",
+    "tools/camera_calib.py": "eb73eb16ed5ecd37aad395c5812da59e6f37dfc2a6f7dbd977bdb79c26b798b4",
+    "tools/camera_live.py": "b067fc3a7793a468ce966ca5002bfc70422191e4be67cca03ecad6e8e1cece94",
+    "tools/doctor.py": "f9c9e07a2798cddfd4fb291fd93b89554d88b794bcf5240783d92e05fbab3aa0",
+    "tools/ik_test.py": "e20b9ab5a35e11e579e395852c2d31905f536a708179a9bdd18ddae7bf2b2d07",
+    "tools/install-system.sh": "86f12c342ea333f8edb664d4cb6f5a9fea30b64e5f59c2f5b8af01c245212b6e",
+    "tools/install_runtime.py": "6713d8c572530b3e745f2049022ee7c405ec38e16f4931626d109ce84a8f9470",
+    "tools/manual.py": "28ab73b3329a2e67cd494932aafb9821b1255361eed91ff1f44d154afca61773",
+    "tools/verify_package.py": "e2ed3d032ab28f4f95c158cd167f0f5406ee48a809cb112e14ef033fcf3bd695"
+  }
 }
